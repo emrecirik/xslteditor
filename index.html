@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Emre CIRIK">
+    <meta name="description" content="e-Fatura XSLT Düzenleyici - Bilsanet">
+    <meta name="generator" content="e-Fatura XSLT Designer v1.0 by Emre CIRIK">
+    <title>e-Fatura XSLT Düzenleyici</title>
+    <link rel="icon" type="image/x-icon" href="designer.ico">
+    <link rel="shortcut icon" href="designer.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Araç Çubuğu -->
+    <div id="toolbar">
+        <div class="toolbar-group app-brand">
+            <img src="designer.png" alt="Logo" class="app-logo">
+            <span class="app-title">e-Fatura XSLT Düzenleyici</span>
+        </div>
+        <div class="toolbar-group">
+            <label>XSLT Dosyası:</label>
+            <select id="sampleXsltSelect">
+                <option value="">-- Örnek XSLT Seç --</option>
+                <option value="general">Genel Şablon</option>
+                <option value="earsiv">E-Arşiv</option>
+                <option value="irsaliye">İrsaliye</option>
+                <option value="irsaliyeyaniti">İrsaliye Yanıtı</option>
+                <option value="appresponse">Uygulama Yanıtı</option>
+            </select>
+            <input type="file" id="xsltFileInput" accept=".xslt,.xsl">
+            <button id="btnNewXslt" title="Yeni XSLT">&#128195; Yeni XSLT</button>
+        </div>
+        <div class="toolbar-group">
+            <label>XML (UBL) Dosyası:</label>
+            <select id="sampleXmlSelect">
+                <option value="">-- Örnek XML Seç --</option>
+                <optgroup label="Fatura">
+                    <option value="temel">Temel Fatura</option>
+                    <option value="ticari">Ticari Fatura</option>
+                    <option value="hastane">Hastane Faturası</option>
+                    <option value="ihracat">İhracat Faturası</option>
+                    <option value="otv">ÖTV Faturası</option>
+                    <option value="ozelmatrah">Özel Matrah Faturası</option>
+                    <option value="tevkifat">Tevkifat Faturası</option>
+                    <option value="sarj">Şarj Faturası</option>
+                    <option value="sarjanlik">Şarjanlık Faturası</option>
+                    <option value="yolcuberaber">Yolcu Beraberinde</option>
+                </optgroup>
+                <optgroup label="İstisna / İade">
+                    <option value="istisna1">İstisna Fatura 1</option>
+                    <option value="istisna2">İstisna Fatura 2</option>
+                    <option value="iade">İade Faturası</option>
+                </optgroup>
+                <optgroup label="İrsaliye">
+                    <option value="irsaliye_xml1">İrsaliye Örnek 1</option>
+                    <option value="irsaliye_xml2">İrsaliye Örnek 2</option>
+                    <option value="irsaliye_xml3">İrsaliye Örnek 3</option>
+                </optgroup>
+            </select>
+            <input type="file" id="xmlFileInput" accept=".xml">
+        </div>
+        <div class="toolbar-group">
+            <button id="btnUndo" title="Geri Al (Ctrl+Z)">&#8617; Geri Al</button>
+            <button id="btnRedo" title="İleri Al (Ctrl+Y)">&#8618; İleri Al</button>
+        </div>
+        <div class="toolbar-group">
+            <button id="btnPreview" class="btn-primary" title="Önizleme">&#128065; Önizle</button>
+            <button id="btnSave" title="XSLT Kaydet">&#128190; Kaydet</button>
+            <button id="btnInspect" class="btn-inspect" title="Önizlemede tıkla → Editörde bul">&#128269; Inspect Modu</button>
+        </div>
+        <div class="toolbar-group">
+            <button id="btnLayoutGuide" class="btn-guide" title="Fatura şablon düzeni rehberi">&#128204; Düzen Rehberi</button>
+        </div>
+    </div>
+
+    <!-- Ana Düzen -->
+    <div id="main-container">
+        <!-- Sol Panel: Alan Ekleyici -->
+        <div id="left-panel">
+            <h3>Alan Ekle</h3>
+            <p class="drag-hint">&#128161; Alanları sürükleyip <b>önizlemeye</b> veya editöre bırakın</p>
+
+            <!-- Gönderici (Satıcı) Bilgileri -->
+            <div class="panel-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    &#9660; Gönderici (Satıcı) Bilgileri
+                </div>
+                <div class="section-body">
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyName/cbc:Name" title="Firma Adı">Firma Adı</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='VKN' or @schemeID='TCKN']" title="VKN/TCKN">VKN / TCKN</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cac:TaxScheme/cbc:Name" title="Vergi Dairesi">Vergi Dairesi</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:StreetName" title="Adres - Sokak">Adres (Sokak)</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:CitySubdivisionName" title="İlçe">İlçe</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:CityName" title="İl">İl</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:Contact/cbc:Telephone" title="Telefon">Telefon</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:Contact/cbc:Telefax" title="Faks">Faks</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:Contact/cbc:ElectronicMail" title="E-Posta">E-Posta</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cbc:WebsiteURI" title="Web Sitesi">Web Sitesi</button>
+                    <button class="insert-btn logo-btn" data-type="logo" title="Firma Logosu Ekle">&#128247; Firma Logosu</button>
+                    <button class="insert-btn logo-btn" data-type="signature" title="Firma İmzası Ekle">&#9999; Firma İmzası</button>
+                </div>
+            </div>
+
+            <!-- Alıcı (Müşteri) Bilgileri -->
+            <div class="panel-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    &#9660; Alıcı (Müşteri) Bilgileri
+                </div>
+                <div class="section-body">
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyName/cbc:Name" title="Müşteri Adı">Müşteri Adı</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyIdentification/cbc:ID[@schemeID='VKN' or @schemeID='TCKN']" title="Müşteri VKN/TCKN">VKN / TCKN</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cac:TaxScheme/cbc:Name" title="Vergi Dairesi">Vergi Dairesi</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:StreetName" title="Adres">Adres (Sokak)</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:CitySubdivisionName" title="İlçe">İlçe</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:CityName" title="İl">İl</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:Contact/cbc:Telephone" title="Telefon">Telefon</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:Contact/cbc:Telefax" title="Faks">Faks</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:Contact/cbc:ElectronicMail" title="E-Posta">E-Posta</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cbc:WebsiteURI" title="Web Sitesi">Web Sitesi</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:Person/cbc:FirstName" title="Ad">Ad (Gerçek Kişi)</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:Person/cbc:FamilyName" title="Soyad">Soyad (Gerçek Kişi)</button>
+                </div>
+            </div>
+
+            <!-- Fatura Bilgileri -->
+            <div class="panel-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    &#9660; Fatura Bilgileri
+                </div>
+                <div class="section-body">
+                    <button class="insert-btn" data-xpath="n1:Invoice/cbc:ID" title="Fatura No">Fatura No</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cbc:UUID" title="ETTN">ETTN</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cbc:IssueDate" title="Fatura Tarihi">Fatura Tarihi</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cbc:IssueTime" title="Fatura Saati">Fatura Saati</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cbc:InvoiceTypeCode" title="Fatura Tipi">Fatura Tipi</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cbc:ProfileID" title="Senaryo">Senaryo</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cbc:DocumentCurrencyCode" title="Para Birimi">Para Birimi</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cbc:LineCountNumeric" title="Kalem Sayısı">Kalem Sayısı</button>
+                </div>
+            </div>
+
+            <!-- Tutar Bilgileri -->
+            <div class="panel-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    &#9660; Tutar Bilgileri
+                </div>
+                <div class="section-body">
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:LegalMonetaryTotal/cbc:LineExtensionAmount" title="Mal/Hizmet Toplam Tutarı">Mal/Hizmet Toplamı</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount" title="Vergiler Hariç Tutar">Vergiler Hariç</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount" title="Vergiler Dahil Tutar">Vergiler Dahil</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount" title="Toplam İskonto">Toplam İskonto</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:LegalMonetaryTotal/cbc:PayableAmount" title="Ödenecek Tutar">Ödenecek Tutar</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:TaxTotal/cbc:TaxAmount" title="Toplam Vergi">Toplam Vergi</button>
+                </div>
+            </div>
+
+            <!-- Ödeme Bilgileri -->
+            <div class="panel-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    &#9660; Ödeme / İrsaliye Bilgileri
+                </div>
+                <div class="section-body">
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:PaymentTerms/cbc:Note" title="Ödeme Koşulu">Ödeme Koşulu</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:PaymentTerms/cbc:PaymentDueDate" title="Vade Tarihi">Vade Tarihi</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:DespatchDocumentReference/cbc:ID" title="İrsaliye No">İrsaliye No</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:DespatchDocumentReference/cbc:IssueDate" title="İrsaliye Tarihi">İrsaliye Tarihi</button>
+                    <button class="insert-btn" data-xpath="n1:Invoice/cac:OrderReference/cbc:ID" title="Sipariş No">Sipariş No</button>
+                </div>
+            </div>
+
+            <!-- Şablon Bölümleri -->
+            <div class="panel-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    &#9660; Şablon Bölümleri Ekle
+                </div>
+                <div class="section-body">
+                    <button class="insert-btn template-btn" data-template="supplier-block" title="Gönderici Bilgi Bloğu">Gönderici Bloğu</button>
+                    <button class="insert-btn template-btn" data-template="customer-block" title="Alıcı Bilgi Bloğu">Alıcı Bloğu</button>
+                    <button class="insert-btn template-btn" data-template="invoice-header" title="Fatura Başlık Bloğu">Fatura Başlığı</button>
+                    <button class="insert-btn template-btn" data-template="invoice-lines" title="Fatura Kalemleri Tablosu">Fatura Kalemleri</button>
+                    <button class="insert-btn template-btn" data-template="tax-totals" title="Vergi Toplam Tablosu">Vergi Toplamları</button>
+                    <button class="insert-btn template-btn" data-template="notes-section" title="Notlar Bölümü">Notlar Bölümü</button>
+                    <button class="insert-btn template-btn" data-template="bank-accounts" title="Banka Hesap Bilgileri Tablosu">&#127974; Banka Hesap Bilgileri</button>
+                </div>
+            </div>
+
+            <!-- Boş Alan -->
+            <div class="panel-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    &#9660; Boş Alan Ekle
+                </div>
+                <div class="section-body spacer-body">
+                    <button class="insert-btn spacer-btn" data-spacer="10" title="10px boşluk">&#9644; Küçük (10px)</button>
+                    <button class="insert-btn spacer-btn" data-spacer="25" title="25px boşluk">&#9644; Orta (25px)</button>
+                    <button class="insert-btn spacer-btn" data-spacer="50" title="50px boşluk">&#9644; Büyük (50px)</button>
+                    <button class="insert-btn spacer-btn" data-spacer="custom" title="Özel yükseklik girin">&#9644; Özel Boy...</button>
+                    <button class="insert-btn spacer-btn" data-spacer="div" title="Boş div elementi">&#9634; Boş Div</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orta: Editör ve Önizleme -->
+        <div id="center-panel">
+            <!-- Sekmeler -->
+            <div id="tabs">
+                <button class="tab active" data-tab="editor" onclick="switchTab('editor')">XSLT Editör</button>
+                <button class="tab" data-tab="preview" onclick="switchTab('preview')">Önizleme</button>
+                <button class="tab" data-tab="split" onclick="switchTab('split')">Bölünmüş Görünüm</button>
+            </div>
+
+            <!-- Editör Görünümü -->
+            <div id="editor-view" class="tab-content active">
+                <textarea id="xsltEditor"></textarea>
+            </div>
+
+            <!-- Önizleme Görünümü -->
+            <div id="preview-view" class="tab-content">
+                <div class="preview-wrapper">
+                    <iframe id="previewFrame"></iframe>
+                    <div class="preview-drop-overlay" id="previewDropOverlay"></div>
+                </div>
+            </div>
+
+            <!-- Bölünmüş Görünüm -->
+            <div id="split-view" class="tab-content">
+                <div class="split-editor">
+                    <textarea id="xsltEditorSplit"></textarea>
+                </div>
+                <div class="split-preview">
+                    <div class="preview-wrapper">
+                        <iframe id="previewFrameSplit"></iframe>
+                        <div class="preview-drop-overlay" id="previewDropOverlaySplit"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logo/İmza Yükleme Diyaloğu -->
+    <div id="imageDialog" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3 id="imageDialogTitle">Görsel Yükle</h3>
+            <input type="file" id="imageFileInput" accept="image/*">
+            <div id="imagePreviewContainer" style="display:none;">
+                <img id="imagePreview" style="max-width:300px; max-height:200px;">
+            </div>
+            <div class="modal-actions">
+                <label>Genişlik (px): <input type="number" id="imageWidth" value="150" min="10" max="800"></label>
+                <label>Yükseklik (px): <input type="number" id="imageHeight" value="80" min="10" max="600"></label>
+            </div>
+            <div class="modal-actions">
+                <label style="color:#a6adc8;">Hizalama:</label>
+                <div class="align-picker" id="alignPicker">
+                    <button type="button" class="align-btn active" data-align="left" title="Sola hizala">&#9664;</button>
+                    <button type="button" class="align-btn" data-align="center" title="Ortala">&#9632;</button>
+                    <button type="button" class="align-btn" data-align="right" title="Sağa hizala">&#9654;</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="btnInsertImage" class="btn-primary">Ekle</button>
+                <button id="btnCancelImage">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Düzen Rehberi Penceresi -->
+    <div id="layoutGuide" class="modal" style="display:none;">
+        <div class="layout-guide-content">
+            <h3>&#128204; Fatura Şablon Düzeni</h3>
+            <p class="guide-hint">Bir bölüme tıklayarak imleç konumuna ekleyin.<br>Soldaki alanları sürükleyip editöre de bırakabilirsiniz.</p>
+            <div class="invoice-wireframe">
+                <div class="wf-row wf-header-row">
+                    <div class="wf-cell wf-clickable" data-guide-tpl="supplier-block">
+                        <div class="wf-icon">&#127970;</div>
+                        <div class="wf-label">Gönderici<br>Bilgileri</div>
+                    </div>
+                    <div class="wf-cell wf-clickable" data-guide-action="logo">
+                        <div class="wf-icon">&#128247;</div>
+                        <div class="wf-label">Firma<br>Logosu</div>
+                    </div>
+                    <div class="wf-cell wf-clickable" data-guide-tpl="invoice-header">
+                        <div class="wf-icon">&#128203;</div>
+                        <div class="wf-label">Fatura<br>Bilgileri</div>
+                    </div>
+                </div>
+                <div class="wf-row">
+                    <div class="wf-cell wf-full wf-clickable" data-guide-tpl="customer-block">
+                        <div class="wf-icon">&#128100;</div>
+                        <div class="wf-label">Alıcı (Müşteri) Bilgileri</div>
+                    </div>
+                </div>
+                <div class="wf-row wf-large">
+                    <div class="wf-cell wf-full wf-clickable" data-guide-tpl="invoice-lines">
+                        <div class="wf-icon">&#128230;</div>
+                        <div class="wf-label">Fatura Kalemleri Tablosu</div>
+                    </div>
+                </div>
+                <div class="wf-row">
+                    <div class="wf-cell wf-clickable" data-guide-tpl="notes-section">
+                        <div class="wf-icon">&#128221;</div>
+                        <div class="wf-label">Notlar</div>
+                    </div>
+                    <div class="wf-cell wf-clickable" data-guide-tpl="tax-totals">
+                        <div class="wf-icon">&#128176;</div>
+                        <div class="wf-label">Vergi Toplamları</div>
+                    </div>
+                </div>
+                <div class="wf-row">
+                    <div class="wf-cell wf-full wf-clickable" data-guide-tpl="bank-accounts">
+                        <div class="wf-icon">&#127974;</div>
+                        <div class="wf-label">Banka Hesap Bilgileri</div>
+                    </div>
+                </div>
+                <div class="wf-row">
+                    <div class="wf-cell wf-full wf-clickable" data-guide-action="signature" style="justify-content:flex-end;">
+                        <div class="wf-icon">&#9999;</div>
+                        <div class="wf-label">İmza / Kaşe</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions" style="justify-content:center;">
+                <button id="btnCloseGuide">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alan Seçici Diyaloğu (sağ tık menüsü "Alan Ekle") -->
+    <div id="fieldPickerDialog" class="modal" style="display:none;">
+        <div class="modal-content field-picker-content">
+            <h3>Alan Seçin</h3>
+            <div class="field-picker-sections">
+                <div class="field-picker-group">
+                    <div class="field-picker-group-title">Gönderici</div>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyName/cbc:Name">Firma Adı</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:StreetName">Adres</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:PostalAddress/cbc:CityName">Şehir</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:Contact/cbc:Telephone">Telefon</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:AccountingSupplierParty/cac:Party/cac:Contact/cbc:ElectronicMail">E-Posta</button>
+                </div>
+                <div class="field-picker-group">
+                    <div class="field-picker-group-title">Alıcı</div>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyName/cbc:Name">Firma Adı</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:StreetName">Adres</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:AccountingCustomerParty/cac:Party/cac:PostalAddress/cbc:CityName">Şehir</button>
+                </div>
+                <div class="field-picker-group">
+                    <div class="field-picker-group-title">Fatura</div>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cbc:ID">Fatura No</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cbc:IssueDate">Fatura Tarihi</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cbc:InvoiceTypeCode">Fatura Tipi</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cbc:UUID">ETTN</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cbc:DocumentCurrencyCode">Para Birimi</button>
+                </div>
+                <div class="field-picker-group">
+                    <div class="field-picker-group-title">Tutar</div>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:LegalMonetaryTotal/cbc:LineExtensionAmount">Mal/Hizmet Toplamı</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount">Vergiler Dahil</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:LegalMonetaryTotal/cbc:PayableAmount">Ödenecek Tutar</button>
+                    <button class="field-picker-item" data-xpath="n1:Invoice/cac:TaxTotal/cbc:TaxAmount">Toplam Vergi</button>
+                </div>
+            </div>
+            <div class="modal-actions" style="justify-content:center;">
+                <button id="btnCloseFieldPicker">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tablo Ekleme/Düzenleme Diyaloğu -->
+    <div id="tableDialog" class="modal" style="display:none;">
+        <div class="modal-content table-dialog-content">
+            <h3>Tablo Ekle / Düzenle</h3>
+            <div class="table-dialog-grid">
+                <label>Satır Sayısı: <input type="number" id="tblRows" value="3" min="1" max="50"></label>
+                <label>Sütun Sayısı: <input type="number" id="tblCols" value="3" min="1" max="20"></label>
+                <label>Tablo Genişliği: <input type="text" id="tblWidth" value="100%" style="width:80px;"></label>
+                <label>Kenarlık Kalınlığı: <input type="number" id="tblBorder" value="1" min="0" max="10"></label>
+                <label>Hücre Dolgusu (px): <input type="number" id="tblPadding" value="4" min="0" max="30"></label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="tblHasHeader" checked> Başlık Satırı
+                </label>
+            </div>
+            <div class="table-dialog-colors">
+                <div class="color-group">
+                    <span class="color-group-title">Kenarlık</span>
+                    <label>Renk: <input type="color" id="tblBorderColor" value="#000000"></label>
+                </div>
+                <div class="color-group">
+                    <span class="color-group-title">Başlık Satırı</span>
+                    <label>Arkaplan: <input type="color" id="tblHeaderBg" value="#eeeeee"></label>
+                    <label>Yazı: <input type="color" id="tblHeaderColor" value="#000000"></label>
+                </div>
+                <div class="color-group">
+                    <span class="color-group-title">Hücreler</span>
+                    <label>Arkaplan: <input type="color" id="tblCellBg" value="#ffffff"></label>
+                    <label>Yazı: <input type="color" id="tblCellColor" value="#000000"></label>
+                </div>
+            </div>
+            <div class="table-preview-box" id="tblPreviewBox"></div>
+            <div class="modal-actions">
+                <button id="btnInsertTable" class="btn-primary">Tablo Ekle</button>
+                <button id="btnCancelTable">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kurtarma Bildirimi -->
+    <div id="recoveryBar" style="display:none;">
+        <span>&#9888; Kaydedilmemiş bir çalışma bulundu (<span id="recoveryDate"></span>). </span>
+        <button id="btnRecoveryRestore" class="btn-recovery">Geri Yükle</button>
+        <button id="btnRecoveryDiscard" class="btn-recovery btn-recovery-discard">Sil</button>
+    </div>
+
+    <!-- Durum Çubuğu -->
+    <div id="statusbar">
+        <span id="statusText">Hazır</span>
+        <span id="autoSaveStatus"></span>
+        <span class="developer-credit">Geliştirici: Emre CIRIK</span>
+        <span id="cursorPos">Satır: 1, Sütun: 1</span>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchtags.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+    <script src="samples.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
